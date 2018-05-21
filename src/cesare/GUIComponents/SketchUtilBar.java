@@ -13,40 +13,38 @@ import java.awt.event.ActionListener;
 
 public class SketchUtilBar extends JToolBar {
     private OperationUtil currentOperationUtil;
-    private int buttonSide = 32;
+    private int buttonSide = 36;
     private ColorButton onUsingColorButton;
     private enum OperationActionType{REDO,UNDO}
 
-    private class OperationAction extends AbstractAction{
-        OperationActionType type;
-        public OperationAction(OperationActionType type , Icon icon){
-            super(type.name(),icon);
+    private class OperationButton extends JButton{
+        private OperationActionType type;
+        OperationButton(OperationActionType type , Icon icon){
+            super(icon);
+            setMaximumSize(new Dimension(buttonSide, buttonSide));
+            setMinimumSize(new Dimension(buttonSide, buttonSide));
             this.type = type;
-        }
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            switch (type) {
-                case REDO:
-                    for (Component component : getParent().getComponents()) {
-                        if (component instanceof SketchCanvas) {
-                            ((SketchCanvas) component).retrieveOperation();
-                        }
+            addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    switch (type) {
+                        case REDO:
+                            SketchCanvasPane.getInstance().retrieveOperation();
+                            break;
+                        case UNDO:
+                            SketchCanvasPane.getInstance().revokeOperation();
+                            break;
                     }
-                    break;
-                case UNDO:
-                    for (Component component : getParent().getComponents()) {
-                        if (component instanceof SketchCanvas) {
-                            ((SketchCanvas) component).revokeOperation();
-                        }
-                    }
-                    break;
-            }
+                }
+            });
         }
     }
     private class UtilButton extends JButton{
         private OperationUtil operationUtil;
         UtilButton(OperationUtil operationUtil , Icon icon){
             super(icon);
+            setMaximumSize(new Dimension(buttonSide, buttonSide));
+            setMinimumSize(new Dimension(buttonSide, buttonSide));
             this.operationUtil = operationUtil;
             addActionListener(new ActionListener() {
                 @Override
@@ -57,7 +55,6 @@ public class SketchUtilBar extends JToolBar {
                     currentOperationUtil = operationUtil;
                 }
             });
-
         }
     }
     private class ColorButton extends JButton{
@@ -137,10 +134,12 @@ public class SketchUtilBar extends JToolBar {
         return sketchUtilBar;
     }
 
+    ColorButton firstColorButton = new ColorButton();
+    ColorButton secondColorButton = new ColorButton();
     private SketchUtilBar() {
         setFloatable(false);
-        add(new OperationAction(OperationActionType.UNDO, new ImageIcon("res/icon/revoke.png")));
-        add(new OperationAction(OperationActionType.REDO, new ImageIcon("res/icon/retrieve.png")));
+        add(new OperationButton(OperationActionType.UNDO, new ImageIcon("res/icon/revoke.png")));
+        add(new OperationButton(OperationActionType.REDO, new ImageIcon("res/icon/retrieve.png")));
         addSeparator();
         add(new UtilButton(null, new ImageIcon("res/icon/cursor.png")));
         add(new UtilButton(new LineUtil(), new ImageIcon("res/icon/line.png")));
@@ -150,8 +149,10 @@ public class SketchUtilBar extends JToolBar {
         add(new UtilButton(new ClearAreaUtil(new Color(255, 255, 255)), new ImageIcon("res/icon/rectRubber.png")));
         add(new UtilButton(new TextUtil(),new ImageIcon("res/icon/word.png")));
         addSeparator();
-        add(new ColorButton());
+        onUsingColorButton = firstColorButton;
+        firstColorButton.setBorder(new EtchedBorder());
+        add(firstColorButton);
         add(Box.createHorizontalStrut(4));
-        add(new ColorButton());
+        add(secondColorButton);
     }
 }

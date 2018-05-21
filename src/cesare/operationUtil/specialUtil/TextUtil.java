@@ -1,14 +1,11 @@
 package cesare.operationUtil.specialUtil;
 
-import cesare.GUIComponents.SketchCanvas;
 import cesare.operation.Operation;
 import cesare.operation.special.Text;
 import cesare.operationUtil.OperationUtil;
 
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 public class TextUtil extends OperationUtil {
     public TextUtil(){
@@ -54,7 +51,6 @@ public class TextUtil extends OperationUtil {
         curText = ((Text) curOperation[0]);
         curText.setAnchor(x,y);
         curPos = 0;
-        SketchCanvas.getSketchCanvas().addKeyListener(listener);
     }
 
     @Override

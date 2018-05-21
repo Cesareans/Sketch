@@ -12,6 +12,6 @@ public class Sketch {
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
-        SketchMainFrame mainFrame = new SketchMainFrame();
+        SketchMainFrame mainFrame = SketchMainFrame.getInstance();
     }
 }

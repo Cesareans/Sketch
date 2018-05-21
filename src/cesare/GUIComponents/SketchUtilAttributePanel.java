@@ -15,7 +15,7 @@ import static java.awt.GridBagConstraints.WEST;
 public class SketchUtilAttributePanel extends JPanel {
     boolean isFilled = false;
     boolean isGradient = false;
-    Color secondColor;
+    Color secondColor = Color.black;
     int lineWidth;
     boolean isDashed = false;
     int dashedLength;

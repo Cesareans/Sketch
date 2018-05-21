@@ -14,22 +14,28 @@ public abstract class SketchShapeUtil extends OperationUtil {
     protected boolean isGradient = false;
     protected Color secondColor = null;
 
-    public void setColor(Color color) {
+    public SketchShapeUtil setColor(Color color) {
         this.color = color;
+        return this;
     }
-    public void setFilled(boolean filled){
+    public SketchShapeUtil setFilled(boolean filled){
         isFilled = filled;
+        return this;
     }
-    public void setGradient(boolean gradient){
+    public SketchShapeUtil setGradient(boolean gradient){
         isGradient = gradient;
+        return this;
     }
-    public void setSecondColor(Color color){
+    public SketchShapeUtil setSecondColor(Color color){
         secondColor = color;
+        return this;
     }
-    public void setLineWidth(int lineWidth){
+    public SketchShapeUtil setLineWidth(int lineWidth){
         this.lineWidth = lineWidth;
+        return this;
     }
-    public void setDashedLength(int dashedLength){
+    public SketchShapeUtil setDashedLength(int dashedLength){
         this.dashedLength = dashedLength;
+        return this;
     }
 }

@@ -7,7 +7,7 @@ import cesare.operationUtil.graphicUtil.RectUtil;
 import java.awt.*;
 
 public class ClearAreaUtil extends OperationUtil {
-    private RectUtil clearAreaUtil = new RectUtil();
+    private RectUtil clearAreaUtil = ((RectUtil) new RectUtil().setFilled(true));
     public ClearAreaUtil(Color backGroundColor){
         operationType = OperationType.MultiTwoPointType;
         clearAreaUtil.setColor(backGroundColor);
