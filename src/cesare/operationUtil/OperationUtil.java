@@ -13,14 +13,14 @@ public abstract class OperationUtil {
     }
 
     //为了多段多点操作
-    private boolean isEnd = false;
+    private boolean isEnd = true;
     final public void end(){
         isEnd = true;
     }
     final public void reStart(){
         isEnd = false;
     }
-    final public boolean onEnd(){
+    final public boolean isEnd(){
         return isEnd;
     }
 

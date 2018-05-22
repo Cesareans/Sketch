@@ -6,7 +6,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 
 public class SketchMenuBar extends JMenuBar {
-    JFileChooser fileChooser = new JFileChooser();
     private JMenu[] menus = {
             new JMenu("File"){
                 {
@@ -25,13 +24,7 @@ public class SketchMenuBar extends JMenuBar {
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
-                                    fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                                    int value = fileChooser.showOpenDialog(SketchMainFrame.getInstance());
-                                    if(value == JFileChooser.APPROVE_OPTION){
-                                        String selectPath = fileChooser.getSelectedFile().getPath();
-                                        System.out.println ( "你选择的目录是：" + selectPath );
-                                        fileChooser.setVisible(false);
-                                    }
+                                    SketchCanvasPane.getInstance().newCanvasFromFile();
                                 }
                             });
                         }
@@ -41,13 +34,17 @@ public class SketchMenuBar extends JMenuBar {
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
-                                    fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-                                    int value = fileChooser.showSaveDialog(SketchMainFrame.getInstance());
-                                    if(value == JFileChooser.APPROVE_OPTION){
-                                        String selectPath = fileChooser.getSelectedFile().getPath();
-                                        System.out.println ( "你选择的目录是：" + selectPath );
-                                        fileChooser.hide();
-                                    }
+                                    SketchCanvasPane.getInstance().saveToFile();
+                                }
+                            });
+                        }
+                    });
+                    add(new JMenuItem("Save As"){
+                        {
+                            addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    SketchCanvasPane.getInstance().saveToAnotherFile();
                                 }
                             });
                         }
@@ -57,8 +54,26 @@ public class SketchMenuBar extends JMenuBar {
             },
             new JMenu("Edit"){
                 {
-                    add(new JMenuItem("Revoke"));
-                    add(new JMenuItem("Retrieve"));
+                    add(new JMenuItem("Revoke"){
+                        {
+                            addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    SketchCanvasPane.getInstance().revokeOperation();
+                                }
+                            });
+                        }
+                    });
+                    add(new JMenuItem("Retrieve"){
+                        {
+                            addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    SketchCanvasPane.getInstance().retrieveOperation();
+                                }
+                            });
+                        }
+                    });
                 }
             },
             new JMenu("View"){
@@ -69,7 +84,7 @@ public class SketchMenuBar extends JMenuBar {
     };
 
     private static SketchMenuBar sketchMenuBar = new SketchMenuBar();
-    public static SketchMenuBar getSketchMenuBar(){
+    public static SketchMenuBar getInstance(){
         return sketchMenuBar;
     }
     public SketchMenuBar(){

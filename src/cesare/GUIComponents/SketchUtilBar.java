@@ -2,8 +2,7 @@ package cesare.GUIComponents;
 
 import cesare.operationUtil.OperationUtil;
 import cesare.operationUtil.graphicUtil.*;
-import cesare.operationUtil.specialUtil.ClearAreaUtil;
-import cesare.operationUtil.specialUtil.TextUtil;
+import cesare.operationUtil.specialUtil.*;
 
 import javax.swing.*;
 import javax.swing.border.EtchedBorder;
@@ -17,6 +16,10 @@ public class SketchUtilBar extends JToolBar {
     private ColorButton onUsingColorButton;
     private enum OperationActionType{REDO,UNDO}
 
+
+    private class FileButton extends JButton{
+
+    }
     private class OperationButton extends JButton{
         private OperationActionType type;
         OperationButton(OperationActionType type , Icon icon){
@@ -130,7 +133,7 @@ public class SketchUtilBar extends JToolBar {
     }
 
     private static SketchUtilBar sketchUtilBar = new SketchUtilBar();
-    public static SketchUtilBar getSketchUtilBar() {
+    public static SketchUtilBar getInstance() {
         return sketchUtilBar;
     }
 
@@ -142,12 +145,17 @@ public class SketchUtilBar extends JToolBar {
         add(new OperationButton(OperationActionType.REDO, new ImageIcon("res/icon/retrieve.png")));
         addSeparator();
         add(new UtilButton(null, new ImageIcon("res/icon/cursor.png")));
+        add(new UtilButton(new CopyAreaUtil(false),new ImageIcon("res/icon/cut.png")));
+        add(new UtilButton(new CopyAreaUtil(true) , new ImageIcon("res/icon/copy.png")));
+        add(new UtilButton(new ClipUtil(),new ImageIcon("res/icon/clip.png")));
+        addSeparator();
         add(new UtilButton(new LineUtil(), new ImageIcon("res/icon/line.png")));
         add(new UtilButton(new RectUtil(), new ImageIcon("res/icon/rect.png")));
         add(new UtilButton(new OvalUtil(), new ImageIcon("res/icon/oval.png")));
         add(new UtilButton(new PolygonUtil(), new ImageIcon("res/icon/polygon.png")));
-        add(new UtilButton(new ClearAreaUtil(new Color(255, 255, 255)), new ImageIcon("res/icon/rectRubber.png")));
+        add(new UtilButton(new EraserUtil(), new ImageIcon("res/icon/rubber.png")));
         add(new UtilButton(new TextUtil(),new ImageIcon("res/icon/word.png")));
+
         addSeparator();
         onUsingColorButton = firstColorButton;
         firstColorButton.setBorder(new EtchedBorder());

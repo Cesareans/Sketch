@@ -6,43 +6,30 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
 public class SketchMainFrame extends JFrame {
-    class FrameComponentAdapter extends ComponentAdapter{
-        @Override
-        public void componentResized(ComponentEvent e) {
-            VisualRegionHeight = getContentPane().getHeight();
-            VisualRegionWidth = getContentPane().getWidth();
-            resized();
-        }
-    }
-
     private final int utilBarHeight = 40;
     private final int infoBarHeight = 20;
     private final int attrWidth = 120;
-    private int VisualRegionHeight = 640;
-    private int VisualRegionWidth = 960;
-
-    /*private int canvasPaneWidth = 640;
-    private int canvasPaneHeight = 480;*/
+    private int CanvasPaneHeight = 640;
+    private int CanvasPaneWidth = 960;
 
 
     private SpringLayout layout = new SpringLayout();
 
-    private SketchMenuBar sketchMenuBar = SketchMenuBar.getSketchMenuBar();
-    private SketchUtilBar sketchUtilBar = SketchUtilBar.getSketchUtilBar();
-    private SketchUtilAttributePanel sketchUtilAttributePanel = SketchUtilAttributePanel.getSketchUtilAttributePanel();
-    private SketchInfoBar sketchInfoBar = SketchInfoBar.getSketchInfoBar();
+    private SketchMenuBar sketchMenuBar = SketchMenuBar.getInstance();
+    private SketchUtilBar sketchUtilBar = SketchUtilBar.getInstance();
+    private SketchUtilAttributePanel sketchUtilAttributePanel = SketchUtilAttributePanel.getInstance();
+    private SketchInfoBar sketchInfoBar = SketchInfoBar.getInstance();
     private SketchCanvasPane sketchCanvasPane = SketchCanvasPane.getInstance();
 
     private static SketchMainFrame sketchMainFrame = new SketchMainFrame();
     public static SketchMainFrame getInstance(){return sketchMainFrame;}
     private SketchMainFrame(){
         JPanel contentPanel = new JPanel();
-        contentPanel.setPreferredSize(new Dimension(VisualRegionWidth,VisualRegionHeight));
+        contentPanel.setPreferredSize(new Dimension(CanvasPaneWidth, CanvasPaneHeight));
         setContentPane(contentPanel);
 
-        setLayout(layout);
-
         setJMenuBar(sketchMenuBar);
+        setLayout(layout);
         add(sketchUtilBar);
         add(sketchUtilAttributePanel);
         add(sketchInfoBar);
@@ -55,7 +42,15 @@ public class SketchMainFrame extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
 
-        addComponentListener(new FrameComponentAdapter());
+        addComponentListener(new ComponentAdapter(){
+            @Override
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
+                CanvasPaneHeight = getContentPane().getHeight();
+                CanvasPaneWidth = getContentPane().getWidth();
+                resized();
+            }
+        });
     }
 
     private void resized(){
@@ -65,7 +60,7 @@ public class SketchMainFrame extends JFrame {
         constraints = layout.getConstraints(sketchUtilBar);
         constraints.setX(Spring.constant(0));
         constraints.setY(Spring.constant(0));
-        constraints.setWidth(Spring.constant(VisualRegionWidth));
+        constraints.setWidth(Spring.constant(CanvasPaneWidth));
         constraints.setHeight(Spring.constant(utilBarHeight));
 
         //sketchUtilAttributePanel
@@ -73,21 +68,21 @@ public class SketchMainFrame extends JFrame {
         constraints.setX(Spring.constant(0));
         constraints.setY(Spring.constant(layout.getConstraints(sketchUtilBar).getConstraint(SpringLayout.SOUTH).getValue()));
         constraints.setWidth(Spring.constant(attrWidth));
-        constraints.setHeight(Spring.constant(VisualRegionHeight - infoBarHeight - layout.getConstraints(sketchUtilBar).getConstraint(SpringLayout.SOUTH).getValue()));
+        constraints.setHeight(Spring.constant(CanvasPaneHeight - infoBarHeight - layout.getConstraints(sketchUtilBar).getConstraint(SpringLayout.SOUTH).getValue()));
 
         //sketchCanvas
         constraints = layout.getConstraints(sketchCanvasPane);
         constraints.setX(Spring.constant(layout.getConstraints(sketchUtilAttributePanel).getConstraint(SpringLayout.EAST).getValue()));
         constraints.setY(Spring.constant(utilBarHeight));
-        constraints.setWidth(Spring.constant(VisualRegionWidth - constraints.getX().getValue() ));
-        constraints.setHeight(Spring.constant(VisualRegionHeight - constraints.getY().getValue() - infoBarHeight));
+        constraints.setWidth(Spring.constant(CanvasPaneWidth - constraints.getX().getValue() ));
+        constraints.setHeight(Spring.constant(CanvasPaneHeight - constraints.getY().getValue() - infoBarHeight));
 
 
         //sketchInfoBar
         constraints = layout.getConstraints(sketchInfoBar);
         constraints.setX(Spring.constant(0));
-        constraints.setY(Spring.constant(VisualRegionHeight - infoBarHeight));
-        constraints.setWidth(Spring.constant(VisualRegionWidth));
+        constraints.setY(Spring.constant(CanvasPaneHeight - infoBarHeight));
+        constraints.setWidth(Spring.constant(CanvasPaneWidth));
         constraints.setHeight(Spring.constant(infoBarHeight));
     }
 }

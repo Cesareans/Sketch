@@ -4,10 +4,11 @@ import javax.swing.*;
 
 public class SketchInfoBar extends JToolBar {
     private static SketchInfoBar sketchInfoBar = new SketchInfoBar();
-    public static SketchInfoBar getSketchInfoBar(){
+    public static SketchInfoBar getInstance(){
         return sketchInfoBar;
     }
     public SketchInfoBar(){
+        setFloatable(false);
         add(mouseInfoLabel);
     }
 

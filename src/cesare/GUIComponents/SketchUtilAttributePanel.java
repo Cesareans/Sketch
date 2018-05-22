@@ -33,7 +33,7 @@ public class SketchUtilAttributePanel extends JPanel {
 
     GridBagLayout layout = new GridBagLayout();
     private static SketchUtilAttributePanel sketchUtilAttributePanel = new SketchUtilAttributePanel();
-    public static SketchUtilAttributePanel getSketchUtilAttributePanel(){
+    public static SketchUtilAttributePanel getInstance(){
         return sketchUtilAttributePanel;
     }
     public SketchUtilAttributePanel() {
