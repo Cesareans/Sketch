@@ -7,10 +7,14 @@ import cesare.operationUtil.OperationUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -118,7 +122,6 @@ public class SketchCanvasPane extends JDesktopPane {
                     if(currentOperationUtilRef == null || currentOperationUtilRef.getOperationType() != OperationUtil.OperationType.MultiOnePointType)
                         return;
                     if (currentOperation[0] != null) {
-
                         if (!currentOperationUtilRef.isEnd())
                             currentOperationUtilRef.setProcess(currentOperation, e.getX(), e.getY());
                     }
@@ -155,6 +158,20 @@ public class SketchCanvasPane extends JDesktopPane {
                 setPreferredSize(new Dimension(width, height));
             }
 
+            //BufferedImage
+            BufferedImage bufferedImage;
+            BufferedImage imageInOperations(){
+                ColorModel cm = bufferedImage.getColorModel();
+                boolean isAlpha = cm.isAlphaPremultiplied();
+                WritableRaster raster = bufferedImage.copyData(null);
+                return new BufferedImage(cm, raster, isAlpha, null);
+            }
+            BufferedImage convertToImage(){
+                bufferedImage = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_RGB);
+                operate(bufferedImage);
+                return bufferedImage;
+            }
+
             //Operation
             OperationUtil currentOperationUtilRef;
             Operation currentOperation[] = new Operation[1];
@@ -189,27 +206,30 @@ public class SketchCanvasPane extends JDesktopPane {
                 else
                     setEditState(true);
             }
-            void operate(Graphics g) {
-                 if (backImage == null) {
+            void operate(BufferedImage image) {
+                Graphics2D g = image.createGraphics();
+                if (backImage == null) {
                     g.setColor(Color.white);
                     g.fillRect(0, 0, canvasWidth, canvasHeight);
-                 } else {
+                } else {
                     g.drawImage(backImage, 0, 0, canvasWidth, canvasHeight, null);
-                 }
+                }
 
-                Graphics2D g2d = ((Graphics2D) g);
-                Stroke preStroke = g2d.getStroke();
+                Stroke preStroke = g.getStroke();
 
                 for (Operation operation : operations) {
                     operation.operate(g);
                 }
-                if (currentOperation[0] != null) {
+                if (currentOperation[0] != null)
                     currentOperation[0].operate(g);
-                }
-                if (selectRegion != null)
+                if (selectRegion != null) {
+                    Shape clip =  g.getClip();
+                    g.setClip(null);
                     selectRegion.draw(g);
+                    g.setClip(clip);
+                }
 
-                g2d.setStroke(preStroke);
+                g.setStroke(preStroke);
             }
 
             //State
@@ -248,17 +268,13 @@ public class SketchCanvasPane extends JDesktopPane {
                 backImage = image;
             }
 
-            //BufferedImage
-            BufferedImage convertToImage(){
-                BufferedImage image = new BufferedImage(canvasWidth,canvasHeight,BufferedImage.TYPE_INT_RGB);
-                operate(image.createGraphics());
-                return image;
-            }
 
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                operate(g);
+                bufferedImage = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_RGB);
+                operate(bufferedImage);
+                g.drawImage(bufferedImage,0,0,canvasWidth,canvasHeight,null);
             }
         }
 
@@ -355,6 +371,7 @@ public class SketchCanvasPane extends JDesktopPane {
 
             pack();
             setVisible(true);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentResized(ComponentEvent e) {
@@ -362,6 +379,32 @@ public class SketchCanvasPane extends JDesktopPane {
                     resized();
                 }
             });
+            /*addInternalFrameListener(new InternalFrameAdapter() {
+                @Override
+                public void internalFrameClosing(InternalFrameEvent e) {
+                    super.internalFrameClosing(e);
+                    if (canvas.isEdited) {
+                        int choice = JOptionPane.showConfirmDialog(SketchMainFrame.getInstance(), "File not saved, confirm closing?", "Info", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                        switch (choice){
+                            case JOptionPane.OK_OPTION:
+                                try {
+                                    setClosed(true);
+                                }catch (Exception ex){
+                                    ex.printStackTrace();
+                                }
+                                break;
+                            case JOptionPane.CANCEL_OPTION:
+                            case JOptionPane.CLOSED_OPTION:
+                                try {
+                                    setClosed(false);
+                                }catch (Exception ex){
+                                    ex.printStackTrace();
+                                }
+                                break;
+                        }
+                    }
+                }
+            });*/
         }
         SketchCanvas(File file){
             super(file.getName(),true,true,true,true);
@@ -378,6 +421,7 @@ public class SketchCanvasPane extends JDesktopPane {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(SketchMainFrame.getInstance(),"File Open Failed!","Warning!",JOptionPane.INFORMATION_MESSAGE);
             }
+
         }
         SketchCanvas(int width , int height){
             super("Untitled*", true, true, true, true);
@@ -398,7 +442,7 @@ public class SketchCanvasPane extends JDesktopPane {
             return canvas.convertToImage();
         }
         private BufferedImage getCanvasImageInOperations(){
-            return null;
+            return canvas.imageInOperations();
         }
     }
 
@@ -409,6 +453,19 @@ public class SketchCanvasPane extends JDesktopPane {
 
     private SketchCanvasPane() {
         setBackground(Color.white);
+    }
+
+    public int getCanvasWidth(){
+        if(getSelectedFrame()!=null)
+            return ((SketchCanvas) getSelectedFrame()).getCanvasWidth();
+        else
+            return 0;
+    }
+    public int getCanvasHeight(){
+        if(getSelectedFrame() != null)
+            return ((SketchCanvas) getSelectedFrame()).getCanvasHeight();
+        else
+            return 0;
     }
 
     public void cancelSelectRegion() {
@@ -439,6 +496,7 @@ public class SketchCanvasPane extends JDesktopPane {
         else
             return null;
     }
+
     public void saveToFile() {
         if (getSelectedFrame() != null)
             ((SketchCanvas) getSelectedFrame()).saveToFile();
@@ -446,6 +504,11 @@ public class SketchCanvasPane extends JDesktopPane {
     public void saveToAnotherFile() {
         if (getSelectedFrame() != null)
             ((SketchCanvas) getSelectedFrame()).saveToAnotherFile();
+    }
+
+    public void closeFile(){
+        if(getSelectedFrame()!=null)
+            getSelectedFrame().doDefaultCloseAction();
     }
 
     public void newCanvasFromFile(){

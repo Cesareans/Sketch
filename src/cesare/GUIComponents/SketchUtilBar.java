@@ -14,30 +14,20 @@ public class SketchUtilBar extends JToolBar {
     private OperationUtil currentOperationUtil;
     private int buttonSide = 36;
     private ColorButton onUsingColorButton;
-    private enum OperationActionType{REDO,UNDO}
 
 
-    private class FileButton extends JButton{
-
+    private interface NonParaNonRet {
+        public void operation();
     }
     private class OperationButton extends JButton{
-        private OperationActionType type;
-        OperationButton(OperationActionType type , Icon icon){
+        OperationButton(NonParaNonRet operation , Icon icon){
             super(icon);
             setMaximumSize(new Dimension(buttonSide, buttonSide));
             setMinimumSize(new Dimension(buttonSide, buttonSide));
-            this.type = type;
             addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    switch (type) {
-                        case REDO:
-                            SketchCanvasPane.getInstance().retrieveOperation();
-                            break;
-                        case UNDO:
-                            SketchCanvasPane.getInstance().revokeOperation();
-                            break;
-                    }
+                    operation.operation();
                 }
             });
         }
@@ -111,8 +101,15 @@ public class SketchUtilBar extends JToolBar {
         private Color getColor(){
             return buttonColor;
         }
+        private void setColor(Color color){
+            buttonColor = color;
+            updateUI();
+        }
     }
 
+    public void setOnUsingColor(Color color){
+        onUsingColorButton.setColor(color);
+    }
     public OperationUtil getOperationUtilRef() {
         SketchUtilAttributePanel attrRef = null;
         for(Component c : getParent().getComponents()){
@@ -132,17 +129,23 @@ public class SketchUtilBar extends JToolBar {
         return currentOperationUtil;
     }
 
+    ColorButton firstColorButton = new ColorButton();
+    ColorButton secondColorButton = new ColorButton();
+
     private static SketchUtilBar sketchUtilBar = new SketchUtilBar();
     public static SketchUtilBar getInstance() {
         return sketchUtilBar;
     }
-
-    ColorButton firstColorButton = new ColorButton();
-    ColorButton secondColorButton = new ColorButton();
     private SketchUtilBar() {
         setFloatable(false);
-        add(new OperationButton(OperationActionType.UNDO, new ImageIcon("res/icon/revoke.png")));
-        add(new OperationButton(OperationActionType.REDO, new ImageIcon("res/icon/retrieve.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().newCanvas(640,480),new ImageIcon("res/icon/newFile.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().newCanvasFromFile(),new ImageIcon("res/icon/openFile.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().saveToFile(),new ImageIcon("res/icon/saveFile.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().saveToAnotherFile(),new ImageIcon("res/icon/saveToAnotherFile.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().closeFile(),new ImageIcon("res/icon/quit.png")));
+        addSeparator();
+        add(new OperationButton(()->SketchCanvasPane.getInstance().revokeOperation(), new ImageIcon("res/icon/revoke.png")));
+        add(new OperationButton(()->SketchCanvasPane.getInstance().retrieveOperation(), new ImageIcon("res/icon/retrieve.png")));
         addSeparator();
         add(new UtilButton(null, new ImageIcon("res/icon/cursor.png")));
         add(new UtilButton(new CopyAreaUtil(false),new ImageIcon("res/icon/cut.png")));
@@ -155,12 +158,13 @@ public class SketchUtilBar extends JToolBar {
         add(new UtilButton(new PolygonUtil(), new ImageIcon("res/icon/polygon.png")));
         add(new UtilButton(new EraserUtil(), new ImageIcon("res/icon/rubber.png")));
         add(new UtilButton(new TextUtil(),new ImageIcon("res/icon/word.png")));
-
         addSeparator();
         onUsingColorButton = firstColorButton;
         firstColorButton.setBorder(new EtchedBorder());
         add(firstColorButton);
         add(Box.createHorizontalStrut(4));
         add(secondColorButton);
+        add(Box.createHorizontalStrut(4));
+        add(new UtilButton(new DropperUtil(), new ImageIcon("res/icon/dropper.png")));
     }
 }

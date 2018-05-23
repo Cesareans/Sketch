@@ -3,6 +3,8 @@ package cesare.GUIComponents;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.io.File;
 
 public class SketchMenuBar extends JMenuBar {
@@ -11,6 +13,7 @@ public class SketchMenuBar extends JMenuBar {
                 {
                     add(new JMenuItem("New"){
                         {
+                            setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
@@ -21,6 +24,7 @@ public class SketchMenuBar extends JMenuBar {
                     });
                     add(new JMenuItem("Open"){
                         {
+                            setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
@@ -31,6 +35,7 @@ public class SketchMenuBar extends JMenuBar {
                     });
                     add(new JMenuItem("Save"){
                         {
+                            setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
@@ -41,6 +46,7 @@ public class SketchMenuBar extends JMenuBar {
                     });
                     add(new JMenuItem("Save As"){
                         {
+                            setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK|InputEvent.SHIFT_DOWN_MASK));
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
@@ -49,7 +55,17 @@ public class SketchMenuBar extends JMenuBar {
                             });
                         }
                     });
-                    add(new JMenuItem("Close"));
+                    add(new JMenuItem("Close"){
+                        {
+                            setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, InputEvent.CTRL_DOWN_MASK));
+                            addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    SketchCanvasPane.getInstance().closeFile();
+                                }
+                            });
+                        }
+                    });
                 }
             },
             new JMenu("Edit"){
@@ -59,6 +75,7 @@ public class SketchMenuBar extends JMenuBar {
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
+                                    setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
                                     SketchCanvasPane.getInstance().revokeOperation();
                                 }
                             });
@@ -69,6 +86,7 @@ public class SketchMenuBar extends JMenuBar {
                             addActionListener(new ActionListener() {
                                 @Override
                                 public void actionPerformed(ActionEvent e) {
+                                    setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
                                     SketchCanvasPane.getInstance().retrieveOperation();
                                 }
                             });
