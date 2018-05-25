@@ -2,13 +2,10 @@ package cesare.GUIComponents;
 
 import cesare.operation.Operation;
 import cesare.operation.special.Clip;
-import cesare.operation.special.CopyArea;
 import cesare.operationUtil.OperationUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.InternalFrameAdapter;
-import javax.swing.event.InternalFrameEvent;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
@@ -21,7 +18,7 @@ import java.util.ArrayList;
 public class SketchCanvasPane extends JDesktopPane {
     public class SketchCanvas extends JInternalFrame {
         private class Canvas extends JPanel {
-            private class SelectRegion{
+            class SelectRegion{
                 int x1,y1,x2,y2;
                 boolean isClip;
                 final int dashedLength = 3;
@@ -47,7 +44,7 @@ public class SketchCanvasPane extends JDesktopPane {
                     g2d.draw(new Rectangle2D.Double(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)));
                 }
             }
-            private class mouseListener extends MouseAdapter {
+            class mouseListener extends MouseAdapter {
                 @Override
                 public void mousePressed(MouseEvent e) {
                     super.mousePressed(e);
@@ -102,7 +99,7 @@ public class SketchCanvasPane extends JDesktopPane {
                 }
 
             }
-            private class motionListener extends MouseMotionAdapter {
+            class motionListener extends MouseMotionAdapter {
                 @Override
                 public void mouseDragged(MouseEvent e) {
                     super.mouseDragged(e);
@@ -130,7 +127,7 @@ public class SketchCanvasPane extends JDesktopPane {
                 }
 
             }
-            private class keyListener extends KeyAdapter{
+            class keyListener extends KeyAdapter{
                 @Override
                 public void keyReleased(KeyEvent e) {
                     super.keyReleased(e);
@@ -143,8 +140,8 @@ public class SketchCanvasPane extends JDesktopPane {
             }
 
             //Size
-            private int canvasWidth;
-            private int canvasHeight;
+            int canvasWidth;
+            int canvasHeight;
             Canvas(int width, int height) {
                 setCanvasSize(width, height);
                 addMouseListener(new mouseListener());
@@ -173,10 +170,27 @@ public class SketchCanvasPane extends JDesktopPane {
             }
 
             //Operation
+            boolean isEdited = false;
+            int savedOperationIndex = 0;
             OperationUtil currentOperationUtilRef;
             Operation currentOperation[] = new Operation[1];
             ArrayList<Operation> operations = new ArrayList<>();
             ArrayList<Operation> revokedOperations = new ArrayList<>();
+            void setEditState(boolean isEdited){
+                this.isEdited = isEdited;
+                String title = SketchCanvas.this.getTitle();
+                int length = title.length();
+                if(isEdited && title.charAt(length - 1) != '*') {
+                    SketchCanvas.this.setTitle(title + '*');
+                }else if(!isEdited){
+                    savedOperationIndex = operations.size();
+                    if(title.charAt(length - 1) == '*')
+                        SketchCanvas.this.setTitle(title.substring(0,length - 1));
+                }
+            }
+            boolean getEditState() {
+                return isEdited;
+            }
             void confirmOperation() {
                 if (currentOperation[0] != null) {
                     operations.add(currentOperation[0]);
@@ -185,8 +199,10 @@ public class SketchCanvasPane extends JDesktopPane {
                 }
                 setEditState(true);
                 updateUI();
+                SketchUtilBar.getInstance().updateButtonState();
+                SketchMenuBar.getInstance().updateMenuItemState();
             }
-            void revokeOperation() {
+            void undoOperation() {
                 if (operations.size() > 0) {
                     revokedOperations.add(operations.remove(operations.size() - 1));
                     updateUI();
@@ -195,8 +211,10 @@ public class SketchCanvasPane extends JDesktopPane {
                     setEditState(false);
                 else
                     setEditState(true);
+                SketchUtilBar.getInstance().updateButtonState();
+                SketchMenuBar.getInstance().updateMenuItemState();
             }
-            void retrieveOperation() {
+            void redoOperation() {
                 if (revokedOperations.size() > 0) {
                     operations.add((revokedOperations.remove(revokedOperations.size() - 1)));
                     updateUI();
@@ -205,6 +223,8 @@ public class SketchCanvasPane extends JDesktopPane {
                     setEditState(false);
                 else
                     setEditState(true);
+                SketchUtilBar.getInstance().updateButtonState();
+                SketchMenuBar.getInstance().updateMenuItemState();
             }
             void operate(BufferedImage image) {
                 Graphics2D g = image.createGraphics();
@@ -222,20 +242,12 @@ public class SketchCanvasPane extends JDesktopPane {
                 }
                 if (currentOperation[0] != null)
                     currentOperation[0].operate(g);
-                if (selectRegion != null) {
-                    Shape clip =  g.getClip();
-                    g.setClip(null);
-                    selectRegion.draw(g);
-                    g.setClip(clip);
-                }
 
                 g.setStroke(preStroke);
             }
 
             //State
             private SelectRegion selectRegion;
-            private boolean isEdited = false;
-            private int savedOperationIndex = 0;
             private Image backImage = null;
             void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip){
                 if(selectRegion == null)
@@ -249,21 +261,6 @@ public class SketchCanvasPane extends JDesktopPane {
                 selectRegion = null;
                 updateUI();
             }
-            void setEditState(boolean isEdited){
-                this.isEdited = isEdited;
-                String title = SketchCanvas.this.getTitle();
-                int length = title.length();
-                if(isEdited && title.charAt(length - 1) != '*') {
-                    SketchCanvas.this.setTitle(title + '*');
-                }else if(!isEdited){
-                    savedOperationIndex = operations.size();
-                    if(title.charAt(length - 1) == '*')
-                        SketchCanvas.this.setTitle(title.substring(0,length - 1));
-                }
-            }
-            boolean getEditState() {
-                return isEdited;
-            }
             void setBackImage(Image image){
                 backImage = image;
             }
@@ -275,6 +272,9 @@ public class SketchCanvasPane extends JDesktopPane {
                 bufferedImage = new BufferedImage(canvasWidth, canvasHeight, BufferedImage.TYPE_INT_RGB);
                 operate(bufferedImage);
                 g.drawImage(bufferedImage,0,0,canvasWidth,canvasHeight,null);
+                if (selectRegion != null) {
+                    selectRegion.draw(g);
+                }
             }
         }
 
@@ -285,18 +285,25 @@ public class SketchCanvasPane extends JDesktopPane {
         public Canvas canvas;
         private SpringLayout layout = new SpringLayout();
 
-        void cancelSelectRegion(){
-            canvas.cancelSelectRegion();
-        }
-        void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip) {
-            canvas.setSelectRegion(x1,y1,x2,y2,isClip);
-        }
-
         public int getCanvasWidth(){
             return canvas.canvasWidth;
         }
         public int getCanvasHeight(){
             return canvas.canvasHeight;
+        }
+
+        private BufferedImage getCanvasImage(){
+            return canvas.convertToImage();
+        }
+        private BufferedImage getCanvasImageInOperations(){
+            return canvas.imageInOperations();
+        }
+        void cancelSelectRegion(){
+            canvas.cancelSelectRegion();
+        }
+        //TODO:TO Simplify this realization
+        void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip) {
+            canvas.setSelectRegion(x1,y1,x2,y2,isClip);
         }
         //File
         private void saveToFile(){
@@ -350,6 +357,19 @@ public class SketchCanvasPane extends JDesktopPane {
             imageFile = file;
             setTitle(imageFile.getName());
         }
+        //Operations
+        private boolean canUndo(){
+            return canvas.operations.size() > 0;
+        }
+        private boolean canRedo(){
+            return canvas.revokedOperations.size() > 0;
+        }
+        private void undoOperation() {
+            canvas.undoOperation();
+        }
+        private void redoOperation() {
+            canvas.redoOperation();
+        }
 
         private void resized(){
             SpringLayout.Constraints constraints;
@@ -371,7 +391,7 @@ public class SketchCanvasPane extends JDesktopPane {
 
             pack();
             setVisible(true);
-            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setDefaultCloseOperation(JInternalFrame.EXIT_ON_CLOSE);
             addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentResized(ComponentEvent e) {
@@ -431,19 +451,6 @@ public class SketchCanvasPane extends JDesktopPane {
             canvas = new Canvas(windowWidth, windowHeight);
             partialInit();
         }
-
-        private void revokeOperation() {
-            canvas.revokeOperation();
-        }
-        private void retrieveOperation() {
-            canvas.retrieveOperation();
-        }
-        private BufferedImage getCanvasImage(){
-            return canvas.convertToImage();
-        }
-        private BufferedImage getCanvasImageInOperations(){
-            return canvas.imageInOperations();
-        }
     }
 
     private static SketchCanvasPane ourInstance = new SketchCanvasPane();
@@ -476,13 +483,25 @@ public class SketchCanvasPane extends JDesktopPane {
         if (getSelectedFrame() != null)
             ((SketchCanvas) getSelectedFrame()).setSelectRegion(x1, y1, x2, y2, isClip);
     }
-    public void revokeOperation() {
+    public boolean canUndo(){
         if (getSelectedFrame() != null)
-            ((SketchCanvas) getSelectedFrame()).revokeOperation();
+            return ((SketchCanvas) getSelectedFrame()).canUndo();
+        else
+            return false;
     }
-    public void retrieveOperation() {
+    public boolean canRedo(){
         if (getSelectedFrame() != null)
-            ((SketchCanvas) getSelectedFrame()).retrieveOperation();
+            return ((SketchCanvas) getSelectedFrame()).canRedo();
+        else
+            return false;
+    }
+    public void undoOperation() {
+        if (getSelectedFrame() != null)
+            ((SketchCanvas) getSelectedFrame()).undoOperation();
+    }
+    public void redoOperation() {
+        if (getSelectedFrame() != null)
+            ((SketchCanvas) getSelectedFrame()).redoOperation();
     }
     public BufferedImage getCanvasImage() {
         if (getSelectedFrame() != null)
