@@ -26,7 +26,7 @@ public class Clip extends Operation {
     public void setSecondPoint(int x, int y) {
         x2 = x;
         y2 = y;
-        SketchCanvasPane.getInstance().setSelectRegion(x1,y1,x2,y2,true);
+        SketchCanvasPane.getInstance().setSelectRegion(x1,y1,x2,y2);
     }
 
     @Override

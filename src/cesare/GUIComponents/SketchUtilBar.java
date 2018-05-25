@@ -159,8 +159,8 @@ public class SketchUtilBar extends JToolBar {
         add(redoButton);
         addSeparator();
         add(new UtilButton(null, new ImageIcon("res/icon/cursor.png")));
-        add(new UtilButton(new CopyAreaUtil(false), new ImageIcon("res/icon/cut.png")));
-        add(new UtilButton(new CopyAreaUtil(true), new ImageIcon("res/icon/copy.png")));
+        add(new UtilButton(new AreaUtil(false), new ImageIcon("res/icon/cut.png")));
+        add(new UtilButton(new AreaUtil(true), new ImageIcon("res/icon/copy.png")));
         add(new UtilButton(new ClipUtil(), new ImageIcon("res/icon/clip.png")));
         addSeparator();
         add(new UtilButton(new LineUtil(), new ImageIcon("res/icon/line.png")));

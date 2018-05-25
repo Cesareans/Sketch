@@ -6,7 +6,7 @@ import cesare.operation.Operation;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class CopyArea extends Operation{
+public class Area extends Operation{
     int x1,y1,x2,y2;
     int sdx, sdy;
     int dx,dy;
@@ -14,7 +14,7 @@ public class CopyArea extends Operation{
     BufferedImage image;
 
 
-    public CopyArea(int x1, int y1, int x2, int y2 , boolean retain) {
+    public Area(int x1, int y1, int x2, int y2 , boolean retain) {
         setFirstPoint(x1, y1);
         setSecondPoint(x2, y2);
         sdx = sdy = dx = dy = 0;
@@ -43,12 +43,12 @@ public class CopyArea extends Operation{
             y=SketchCanvasPane.getInstance().getCanvasHeight();
         x2 = x;
         y2 = y;
-        SketchCanvasPane.getInstance().setSelectRegion(x1,y1,x2,y2,false);
+        SketchCanvasPane.getInstance().setSelectRegion(x1,y1,x2,y2);
     }
     public void setDistance(int dx , int dy){
         this.dx=dx;
         this.dy=dy;
-        SketchCanvasPane.getInstance().setSelectRegion(x1 + dx + sdx, y1 + dy + sdy, x2 + dx + sdx, y2 +dy+ sdy,false);
+        SketchCanvasPane.getInstance().setSelectRegion(x1 + dx + sdx, y1 + dy + sdy, x2 + dx + sdx, y2 +dy+ sdy);
     }
     public void confirmMove() {
         sdx +=dx;

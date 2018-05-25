@@ -28,8 +28,8 @@ public class SketchMainFrame extends JFrame {
         contentPanel.setPreferredSize(new Dimension(CanvasPaneWidth, CanvasPaneHeight));
         setContentPane(contentPanel);
 
-        setJMenuBar(sketchMenuBar);
         setLayout(layout);
+        setJMenuBar(sketchMenuBar);
         add(sketchUtilBar);
         add(sketchUtilAttributePanel);
         add(sketchInfoBar);

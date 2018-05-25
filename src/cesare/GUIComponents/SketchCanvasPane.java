@@ -6,6 +6,9 @@ import cesare.operationUtil.OperationUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.InternalFrameAdapter;
+import javax.swing.event.InternalFrameEvent;
+import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Rectangle2D;
@@ -16,27 +19,59 @@ import java.io.File;
 import java.util.ArrayList;
 
 public class SketchCanvasPane extends JDesktopPane {
-    public class SketchCanvas extends JInternalFrame {
-        private class Canvas extends JPanel {
+    class Filter extends FileFilter {
+        String[] suffixes;
+        Filter(String... suffixes) {
+            super();
+            this.suffixes = suffixes;
+        }
+        boolean matchSuffix(String path){
+            for(String suffix:suffixes){
+                if(path.toLowerCase().endsWith('.' + suffix.toLowerCase()))
+                    return true;
+            }
+            return false;
+        }
+
+
+        @Override
+        public boolean accept(File file) {
+            if(file.isDirectory())
+                return true;
+            for(String suffix:suffixes){
+                if(file.getName().toLowerCase().endsWith('.' + suffix.toLowerCase()))
+                    return true;
+            }
+            return false;
+        }
+
+        @Override
+        public String getDescription() {
+            StringBuilder description = new StringBuilder();
+            for(int i = 0 ; i < suffixes.length - 1; ++i){
+                description.append("*.").append(suffixes[i]).append('/');
+            }
+            description.append("*.").append(suffixes[suffixes.length - 1]);
+            return description.toString();
+        }
+    }
+    class SketchCanvas extends JInternalFrame {
+        class Canvas extends JPanel {
             class SelectRegion{
                 int x1,y1,x2,y2;
-                boolean isClip;
                 final int dashedLength = 3;
-                SelectRegion(int x1, int y1 , int x2 , int y2 , boolean isClip) {
+                SelectRegion(int x1, int y1 , int x2 , int y2) {
+                    setRegion(x1, y1, x2, y2);
+                }
+                void setRegion(int x1, int y1 , int x2 , int y2){
                     this.x1 = x1;
                     this.y1 = y1;
                     this.x2 = x2;
                     this.y2 = y2;
-                    this.isClip = isClip;
                 }
-                void setRegion(int x1, int y1 , int x2 , int y2 , boolean isClip){
-                    this.x1 = x1;
-                    this.y1 = y1;
-                    this.x2 = x2;
-                    this.y2 = y2;
-                    this.isClip = isClip;
+                boolean inRegion(int x, int y) {
+                    return x > Math.min(x1, x2) && x < Math.max(x1, x2) && y > Math.min(y1, y2) && y < Math.max(y1, y2);
                 }
-
                 void draw(Graphics g){
                     Graphics2D g2d = ((Graphics2D) g);
                     g2d.setColor(Color.black);
@@ -49,6 +84,13 @@ public class SketchCanvasPane extends JDesktopPane {
                 public void mousePressed(MouseEvent e) {
                     super.mousePressed(e);
                     currentOperationUtilRef = SketchUtilBar.getInstance().getOperationUtilRef();
+                    if(selectRegion !=null && !selectRegion.inRegion(e.getX() , e.getY())){
+                        cancelSelectRegion();
+                        if(isClipped){
+                            operations.add(Clip.clearClip());
+                            isClipped = false;
+                        }
+                    }
                     if (currentOperationUtilRef != null) {
                         if (e.getButton() == MouseEvent.BUTTON1) {
                             if (currentOperationUtilRef.isEnd()) {
@@ -194,6 +236,8 @@ public class SketchCanvasPane extends JDesktopPane {
             void confirmOperation() {
                 if (currentOperation[0] != null) {
                     operations.add(currentOperation[0]);
+                    if(currentOperation[0] instanceof Clip)
+                        isClipped = true;
                     revokedOperations.clear();
                     currentOperation[0] = null;
                 }
@@ -247,17 +291,16 @@ public class SketchCanvasPane extends JDesktopPane {
             }
 
             //State
+            private boolean isClipped = false;
             private SelectRegion selectRegion;
             private Image backImage = null;
-            void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip){
+            void setSelectRegion(int x1,int y1,int x2,int y2){
                 if(selectRegion == null)
-                    selectRegion = new SelectRegion(x1,y1,x2,y2,isClip);
+                    selectRegion = new SelectRegion(x1,y1,x2,y2);
                 else
-                    selectRegion.setRegion(x1,y1,x2,y2,isClip);
+                    selectRegion.setRegion(x1,y1,x2,y2);
             }
             void cancelSelectRegion(){
-                if(selectRegion != null && selectRegion.isClip)
-                    operations.add(Clip.clearClip());
                 selectRegion = null;
                 updateUI();
             }
@@ -301,61 +344,66 @@ public class SketchCanvasPane extends JDesktopPane {
         void cancelSelectRegion(){
             canvas.cancelSelectRegion();
         }
-        //TODO:TO Simplify this realization
-        void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip) {
-            canvas.setSelectRegion(x1,y1,x2,y2,isClip);
+        void setSelectRegion(int x1,int y1,int x2,int y2) {
+            canvas.setSelectRegion(x1,y1,x2,y2);
         }
         //File
         private void saveToFile(){
             if(imageFile == null){
-                exportToFile("png");
+                exportToFile();
             }else{
                 try {
                     ImageIO.write(canvas.convertToImage(), imageFormat, imageFile);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
+                canvas.setEditState(false);
             }
-            canvas.setEditState(false);
         }
         private void saveToAnotherFile(){
-            exportToFile("png");
-            canvas.setEditState(false);
+            exportToFile();
         }
-        private void exportToFile(String fileFormat){
+        private void exportToFile(){
             JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setAcceptAllFileFilterUsed(false);
+            fileChooser.setFileFilter(new Filter("jpg","jpeg"));
+            fileChooser.addChoosableFileFilter(new Filter("png"));
+            fileChooser.addChoosableFileFilter(new Filter("bmp"));
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             int value = fileChooser.showSaveDialog(SketchMainFrame.getInstance());
             if(value == JFileChooser.APPROVE_OPTION) {
                 String selectedPath = fileChooser.getSelectedFile().getPath();
+                if(!((Filter) fileChooser.getFileFilter()).matchSuffix(selectedPath)){
+                    int i = selectedPath.lastIndexOf('.');
+                    if(i >= 0)
+                        selectedPath = selectedPath.substring(0 , i) + '.' + ((Filter) fileChooser.getFileFilter()).suffixes[0];
+                    else
+                        selectedPath = selectedPath + '.' + ((Filter) fileChooser.getFileFilter()).suffixes[0];
+                }
                 fileChooser.setVisible(false);
                 File imageFile = new File(selectedPath);
-
                 if (imageFile.exists()) {
                     int choice = JOptionPane.showConfirmDialog(SketchMainFrame.getInstance(), "File overwriting. Please confirm.", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
                     if (choice == JOptionPane.CANCEL_OPTION) {
                         JOptionPane.showMessageDialog(SketchMainFrame.getInstance(), "File overwriting cancelled.", "Cancel", JOptionPane.INFORMATION_MESSAGE);
                         return;
                     }
-                }else{
-                    if (!selectedPath.substring(selectedPath.length() - fileFormat.length(), selectedPath.length() - 1).equals(fileFormat))
-                        selectedPath += ("." + fileFormat) ;
-                    imageFile = new File(selectedPath);
                 }
 
                 try {
-                    ImageIO.write(canvas.convertToImage(), fileFormat, imageFile);
-                    imageFormat = fileFormat;
-                    setFile(imageFile);
+                    setFile(new File(selectedPath));
+                    ImageIO.write(canvas.convertToImage(), imageFormat, imageFile);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
-
+                canvas.setEditState(false);
             }
         }
         private void setFile(File file) {
             imageFile = file;
-            setTitle(imageFile.getName());
+            String name = file.getName();
+            imageFormat = name.substring(name.lastIndexOf('.') + 1);
+            setTitle(name);
         }
         //Operations
         private boolean canUndo(){
@@ -371,6 +419,7 @@ public class SketchCanvasPane extends JDesktopPane {
             canvas.redoOperation();
         }
 
+        //Frame
         private void resized(){
             SpringLayout.Constraints constraints;
             constraints = layout.getConstraints(canvas);
@@ -379,6 +428,22 @@ public class SketchCanvasPane extends JDesktopPane {
             constraints.setWidth(Spring.constant(windowWidth));
             constraints.setHeight(Spring.constant(windowHeight));
 
+        }
+        private void onClosing() {
+            if (canvas.isEdited) {
+                int choice = JOptionPane.showInternalOptionDialog(this, "File not saved, confirm closing?", "Info", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, new String[]{"Cancel", "OK", "Save"}, "Save");
+                switch (choice) {
+                    case 0://Save
+                        saveToFile();
+                        break;
+                    case 1://OK
+                        dispose();
+                        break;
+                    case 2://Cancel
+                        break;
+                }
+            } else
+                dispose();
         }
         private void partialInit(){
             JPanel contentPanel = new JPanel();
@@ -390,8 +455,8 @@ public class SketchCanvasPane extends JDesktopPane {
             resized();
 
             pack();
+            setDefaultCloseOperation(JInternalFrame.DO_NOTHING_ON_CLOSE);
             setVisible(true);
-            setDefaultCloseOperation(JInternalFrame.EXIT_ON_CLOSE);
             addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentResized(ComponentEvent e) {
@@ -399,32 +464,13 @@ public class SketchCanvasPane extends JDesktopPane {
                     resized();
                 }
             });
-            /*addInternalFrameListener(new InternalFrameAdapter() {
+            addInternalFrameListener(new InternalFrameAdapter() {
                 @Override
                 public void internalFrameClosing(InternalFrameEvent e) {
                     super.internalFrameClosing(e);
-                    if (canvas.isEdited) {
-                        int choice = JOptionPane.showConfirmDialog(SketchMainFrame.getInstance(), "File not saved, confirm closing?", "Info", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE);
-                        switch (choice){
-                            case JOptionPane.OK_OPTION:
-                                try {
-                                    setClosed(true);
-                                }catch (Exception ex){
-                                    ex.printStackTrace();
-                                }
-                                break;
-                            case JOptionPane.CANCEL_OPTION:
-                            case JOptionPane.CLOSED_OPTION:
-                                try {
-                                    setClosed(false);
-                                }catch (Exception ex){
-                                    ex.printStackTrace();
-                                }
-                                break;
-                        }
-                    }
+                    onClosing();
                 }
-            });*/
+            });
         }
         SketchCanvas(File file){
             super(file.getName(),true,true,true,true);
@@ -438,13 +484,12 @@ public class SketchCanvasPane extends JDesktopPane {
                 canvas.setBackImage(image);
                 partialInit();
             }catch (Exception ex){
-                ex.printStackTrace();
                 JOptionPane.showMessageDialog(SketchMainFrame.getInstance(),"File Open Failed!","Warning!",JOptionPane.INFORMATION_MESSAGE);
             }
 
         }
         SketchCanvas(int width , int height){
-            super("Untitled*", true, true, true, true);
+            super("Untitled", true, true, true, true);
             windowWidth = width;
             windowHeight = height;
 
@@ -479,9 +524,9 @@ public class SketchCanvasPane extends JDesktopPane {
         if (getSelectedFrame() != null)
             ((SketchCanvas) getSelectedFrame()).cancelSelectRegion();
     }
-    public void setSelectRegion(int x1,int y1,int x2,int y2,boolean isClip) {
+    public void setSelectRegion(int x1,int y1,int x2,int y2) {
         if (getSelectedFrame() != null)
-            ((SketchCanvas) getSelectedFrame()).setSelectRegion(x1, y1, x2, y2, isClip);
+            ((SketchCanvas) getSelectedFrame()).setSelectRegion(x1, y1, x2, y2);
     }
     public boolean canUndo(){
         if (getSelectedFrame() != null)
@@ -532,22 +577,37 @@ public class SketchCanvasPane extends JDesktopPane {
 
     public void newCanvasFromFile(){
         JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setMultiSelectionEnabled(true);
+        fileChooser.setAcceptAllFileFilterUsed(false);
+        fileChooser.setFileFilter(new Filter("jpg","jpeg"));
+        fileChooser.addChoosableFileFilter(new Filter("png"));
+        fileChooser.addChoosableFileFilter(new Filter("bmp"));
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int value = fileChooser.showOpenDialog(SketchMainFrame.getInstance());
         if(value == JFileChooser.APPROVE_OPTION){
-            String selectedPath = fileChooser.getSelectedFile().getPath();
             fileChooser.setVisible(false);
-            File imageFile = new File(selectedPath);
-            if(imageFile.exists()){
-                SketchCanvas canvas = new SketchCanvas(imageFile);
-                add(canvas);
-            }else{
-                JOptionPane.showMessageDialog(SketchMainFrame.getInstance(),"File not existed!" , "Warning" , JOptionPane.WARNING_MESSAGE);
+            for(File selectedFile : fileChooser.getSelectedFiles()) {
+                String selectedPath = selectedFile.getPath();
+                File imageFile = new File(selectedPath);
+                if (imageFile.exists()) {
+                    SketchCanvas canvas = new SketchCanvas(imageFile);
+                    addFrame(canvas);
+                } else {
+                    JOptionPane.showMessageDialog(SketchMainFrame.getInstance(), "File not existed!", "Warning", JOptionPane.WARNING_MESSAGE);
+                }
             }
         }
     }
     public void newCanvas(int width , int height){
         SketchCanvas canvas = new SketchCanvas(width,height);
-        add(canvas);
+        addFrame(canvas);
+    }
+    private void addFrame(JInternalFrame frame){
+        add(frame);
+        this.setSelectedFrame(frame);
+        if(getSelectedFrame() != null){
+            JInternalFrame preFrame = getSelectedFrame();
+            frame.setLocation(preFrame.getX() + 5 , preFrame.getY() + 5);
+        }
     }
 }
